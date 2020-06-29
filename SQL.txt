@@ -1,0 +1,139 @@
+﻿-- Table Etudiant
+CREATE TABLE `tp_bdd_relationnels`.`Etudiant` (
+  `numero` MEDIUMINT(11) NOT NULL AUTO_INCREMENT , 
+  `nom` VARCHAR(40) NOT NULL , 
+  `prenom` VARCHAR(40) NOT NULL ,
+  `id` MEDIUMINT(11) NOT NULL, 
+  PRIMARY KEY (`numero`)
+) ENGINE = InnoDB;
+
+-- Table UE
+CREATE TABLE `tp_bdd_relationnels`.`UE` ( 
+  `code` VARCHAR(6) NOT NULL , 
+  `libelle` VARCHAR(100) NOT NULL,
+  `nombre_heures` MEDIUMINT(11) DEFAULT 0 , 
+  `id` MEDIUMINT(11) DEFAULT NULL, 
+  PRIMARY KEY (`code`)
+  ) ENGINE = InnoDB;
+
+
+-- Table Adresse
+CREATE TABLE `tp_bdd_relationnels`.`Adresse` ( 
+  `id` MEDIUMINT(11) NOT NULL AUTO_INCREMENT , 
+  `numero_rue` VARCHAR(3) NOT NULL , 
+  `nom_rue` VARCHAR(250) NOT NULL , 
+  `ville` VARCHAR(100) NOT NULL , 
+  `code_postal` VARCHAR(5) NOT NULL , 
+  `caractere_rue` ENUM('b','t',' ') NOT NULL , 
+  PRIMARY KEY (`id`)
+) ENGINE = InnoDB;
+
+-- Table Enseignant
+CREATE TABLE `tp_bdd_relationnels`.`Enseignant` ( 
+  `numero` MEDIUMINT(11) NOT NULL AUTO_INCREMENT , 
+  `nom` VARCHAR(100) NOT NULL , 
+  `prenom` VARCHAR(100) NOT NULL , 
+  `age` DATE NOT NULL ,
+  `ville` VARCHAR(100) NOT NULL , 
+  `nombre_heures` SMALLINT(11) DEFAULT 0 , 
+  PRIMARY KEY (`numero`)
+) ENGINE = InnoDB;
+
+-- create Etudiant UE db
+CREATE TABLE `tp_bdd_relationnels`.`EtudiantUE` ( 
+  `numero_etudiant` MEDIUMINT NOT NULL , 
+  `ue_code` VARCHAR(6) NOT NULL,
+  `note_cc` FLOAT NOT NULL , 
+  `note_exam` FLOAT NOT NULL 
+  ) ENGINE = InnoDB;
+
+
+
+-- EXERCICE 2
+-- 3 - Dans le cas Enseignant - UE, il faut ajouter un champ possiblement null pour faire une liaison
+-- 4 - Il me semblait qu'utiliser le code et le numéro de l'étudiant en même temps comme clé primaire 
+--     pour EtudiantUE était dès le départ la meilleure des options car lorsque j'ai pu observer que dans les 
+--     exemples d'insertion en base qu'un EtudiantUE peut avoir plusieurs ue_code et plusieurs etudiant_numero 
+--     similaires mais pas les 2.
+
+
+-- Add foreign keys / alter table
+
+
+-- Etudiant and Adresse
+ALTER TABLE `etudiant` CHANGE `id` `adress_id` MEDIUMINT(11) NOT NULL;
+ALTER TABLE `etudiant` ADD FOREIGN KEY (adress_id) REFERENCES Adresse(id);
+-- Etudiant and EtudiantUE
+-- adding primary key to EtudiantUE
+
+ALTER TABLE `etudiantue` ADD PRIMARY KEY (ue_code, numero_etudiant);
+ALTER TABLE `etudiantue` ADD FOREIGN KEY (numero_etudiant) REFERENCES Etudiant(numero);
+
+-- Enseignant and UE
+ALTER TABLE `ue` CHANGE `id` `numero_enseignant` MEDIUMINT(11) DEFAULT NULL;
+ALTER TABLE `ue` ADD FOREIGN KEY (numero_enseignant) REFERENCES Enseignant(numero);
+
+-- UE and EtudiantUE
+ALTER TABLE `EtudiantUE` ADD FOREIGN KEY (ue_code) REFERENCES UE(code);
+
+
+-- EXERCICE 3
+
+-- insert data
+
+-- Adresse
+INSERT INTO `adresse` (`id`, `numero_rue`, `caractere_rue`, `nom_rue`, `code_postal`, `ville`) VALUES (1, 3, 'b', "Jean médecin", "O6000", "Nice"), (2, 10, ' ', "Barla", "O6000", "Nice"), (3, 10, ' ', "Jean Jaures", "O6200", "Cagnes");
+
+-- Etudiant
+INSERT INTO `etudiant` (`numero`, `nom`, `prenom`, `adress_id`) VALUES (1001, "Nom1", "prenom1", 1), (1002, "Nom2", "prenom2", 2), (1003, "Nom3", "prenom3", 3);
+
+-- Enseignant
+INSERT INTO `enseignant` (`numero`, `nom`, `prenom`, `age`, `nombre_heures`, `ville`) VALUES (1, "Menez", "Gilles", (DATE(NOW()) - INTERVAL 25 YEAR), 35, "Antibes"), (2, "Lahire", "Philippe", (DATE(NOW()) - INTERVAL 26 YEAR), 30, "Nice"), (3, "Kounalis", "Emanuel", (DATE(NOW()) - INTERVAL 27 YEAR), 28, "Nice"), (4, "Renevier", "Philippe", (DATE(NOW()) - INTERVAL 21 YEAR), 28, "Nice");
+
+-- UE
+INSERT INTO `ue` (`code`, `libelle`, `nombre_heures`, `numero_enseignant`) VALUES ("SL2IBD", "Base de Données", 24, 2), ("SL2IPI", "Programmation impérative", 36, 1), ("SL2IAL", "Algorithmique", 32, 3), ("SL2IPW", "Programmation WEB", 26, 4);
+
+
+-- EtudiantUE
+INSERT INTO `etudiantue` (`numero_etudiant`, `ue_code`, `note_cc`, `note_exam`) VALUES (1001, "SL2IBD", 10, 11), (1001, "SL2IPI", 8, 10), (1002, "SL2IBD", 10, 11), (1002, "SL2IPI", 8, 10), (1003, "SL2IBD", 10, 11), (1003, "SL2IPI", 8, 10), (1003, "SL2IAL", 12, 13);
+
+-- 4 - Cet ordre est logique car nos clès étrangères sont bloquantes, par exemple, on ne peut pas entrer
+--     un id_address dans la table étudiant si cet id n'existe pas dans la table adresses
+
+
+-- EXERCICE 4
+SELECT IF(caractere_rue!=" ", CONCAT(numero_rue, caractere_rue), numero_rue) AS numero, nom_rue, ville FROM adresse;
+SELECT nom, prenom FROM etudiant;
+SELECT libelle, numero_enseignant FROM ue;
+SELECT DISTINCT code_postal, ville FROM adresse;
+
+SELECT nom FROM etudiant WHERE nom LIKE "Nom1";
+SELECT numero FROM etudiant JOIN etudiantue ON numero = etudiantue.numero_etudiant WHERE etudiantue.ue_code LIKE "SL2IBD";
+SELECT * FROM enseignant WHERE prenom LIKE "Philippe";
+SELECT nom_rue FROM adresse WHERE ville LIKE "NICE";
+
+-- EXERCICE 5
+
+SELECT nom, prenom FROM etudiant JOIN etudiantue ON numero = etudiantue.etudiant_numero WHERE etudiantue.ue_code LIKE "SL2IBD" OR etudiantue.ue_code LIKE "SL2IPI" GROUP BY nom, prenom;
+
+-- EXERCICE 6
+
+UPDATE etudiantue SET note_exam = note_exam + 1;
+UPDATE etudiantue SET note_cc = note_cc + 1 WHERE ue_code LIKE "SL2IBD";
+
+
+-- EXERCICE 7
+
+ALTER TABLE `adresse` CHANGE `ville` `ville` VARCHAR(105) NOT NULL;
+
+ALTER TABLE `etudiant` ADD `age` DATE NOT NULL DEFAULT '1994-02-08';
+
+UPDATE etudiant SET age = "1993-01-11" WHERE numero = 1001;
+UPDATE etudiant SET age = "1996-03-14" WHERE numero = 1002;
+UPDATE etudiant SET age = "2001-01-29" WHERE numero = 1003;
+
+ALTER TABLE `etudiant` DROP COLUMN `age`;
+
+
+-- EXERCICE 8
+
